@@ -1,15 +1,28 @@
 # File to store book details
 FILENAME = "books.txt"
 
-# Function to add a book
+# Function to add a book with unique ID
 def add_book():
+    book_id = input("Enter Book ID: ")
+    
+    # Check if the ID already exists
+    try:
+        with open(FILENAME, "r") as file:
+            if any(line.startswith(book_id + ",") for line in file):  # Check if ID exists
+                print("Book ID already exists! Please use a unique ID.")
+                return
+    except FileNotFoundError:
+        pass  # No file means no books yet, so proceed
+    
+    # Add the new book if ID is unique
+    title = input("Enter Book Title: ")
+    author = input("Enter Author Name: ")
+    copies = input("Enter Number of Copies: ")
+    
     with open(FILENAME, "a") as file:
-        book_id = input("Enter Book ID: ")
-        title = input("Enter Book Title: ")
-        author = input("Enter Author Name: ")
-        copies = input("Enter Number of Copies: ")
         file.write(f"{book_id},{title},{author},{copies}\n")
         print("Book added successfully!")
+
 
 # Function to view all books
 def view_books():
