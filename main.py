@@ -1,113 +1,141 @@
-# File to store book details
-FILENAME = "books.txt"
+import csv
 
-# Function to add a book with unique ID
+FILENAME = "books.csv"
+
+# Check if a book ID already exists
+def book_exists(book_id):
+    try:
+        with open(FILENAME, "r", newline="") as file:
+            reader = csv.reader(file)
+            for row in reader:
+                if row[0] == book_id:
+                    return True
+    except FileNotFoundError:
+        return False
+    return False
+
+# Check if book with same title, author and copies exists (to avoid duplicates)
+def book_data_exists(title, author, copies, exclude_id=None):
+    try:
+        with open(FILENAME, "r", newline="") as file:
+            reader = csv.reader(file)
+            for row in reader:
+                if exclude_id and row[0] == exclude_id:
+                    continue
+                if row[1] == title and row[2] == author and row[3] == copies:
+                    return True
+    except FileNotFoundError:
+        return False
+    return False
+
+# Add a new book
 def add_book():
     book_id = input("Enter Book ID: ")
-    
-    # Check if the ID already exists
-    try:
-        with open(FILENAME, "r") as file:
-            if any(line.startswith(book_id + ",") for line in file):  # Check if ID exists
-                print("Book ID already exists! Please use a unique ID.")
-                return
-    except FileNotFoundError:
-        pass  # No file means no books yet, so proceed
-    
-    # Add the new book if ID is unique
+    if book_exists(book_id):
+        print("Book ID already exists!")
+        return
+
     title = input("Enter Book Title: ")
     author = input("Enter Author Name: ")
     copies = input("Enter Number of Copies: ")
-    
-    with open(FILENAME, "a") as file:
-        file.write(f"{book_id},{title},{author},{copies}\n")
+
+    if book_data_exists(title, author, copies):
+        print("This book already exists with different ID!")
+        return
+
+    with open(FILENAME, "a", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow([book_id, title, author, copies])
         print("Book added successfully!")
 
-
-# Function to view all books
+# Show all books
 def view_books():
     try:
-        with open(FILENAME, "r") as file:
-            print("\nLibrary Books:")
-            print("ID\tTitle\t\tAuthor\t\tCopies")
-            print("-" * 40)
-            for line in file:
-                book_id, title, author, copies = line.strip().split(",")
-                print(f"{book_id}\t{title}\t\t{author}\t\t{copies}")
+        with open(FILENAME, "r", newline="") as file:
+            reader = csv.reader(file)
+            print("\nBooks in Library:")
+            print("ID\tTitle\tAuthor\tCopies")
+            print("-" * 30)
+            for row in reader:
+                print(f"{row[0]}\t{row[1]}\t{row[2]}\t{row[3]}")
     except FileNotFoundError:
-        print("No books found! Add a book first.")
+        print("No books found!")
 
-# Function to search for a book by ID
+# Search a book by ID
 def search_book():
     book_id = input("Enter Book ID to search: ")
     found = False
     try:
-        with open(FILENAME, "r") as file:
-            for line in file:
-                record = line.strip().split(",")
-                if record[0] == book_id:
+        with open(FILENAME, "r", newline="") as file:
+            reader = csv.reader(file)
+            for row in reader:
+                if row[0] == book_id:
                     print("\nBook Found:")
-                    print("ID:", record[0])
-                    print("Title:", record[1])
-                    print("Author:", record[2])
-                    print("Copies:", record[3])
+                    print("ID:", row[0])
+                    print("Title:", row[1])
+                    print("Author:", row[2])
+                    print("Copies:", row[3])
                     found = True
                     break
         if not found:
             print("Book not found!")
     except FileNotFoundError:
-        print("No books found! Add a book first.")
+        print("No books found!")
 
-# Function to update book details
+# Update book details
 def update_book():
     book_id = input("Enter Book ID to update: ")
-    updated_lines = []
-    found = False
-    try:
-        with open(FILENAME, "r") as file:
-            for line in file:
-                record = line.strip().split(",")
-                if record[0] == book_id:
-                    found = True
-                    print("Enter new details:")
-                    title = input("Enter Book Title: ")
-                    author = input("Enter Author Name: ")
-                    copies = input("Enter Number of Copies: ")
-                    updated_lines.append(f"{book_id},{title},{author},{copies}\n")
-                else:
-                    updated_lines.append(line)
-        if found:
-            with open(FILENAME, "w") as file:
-                file.writelines(updated_lines)
-            print("Book details updated successfully!")
-        else:
-            print("Book not found!")
-    except FileNotFoundError:
-        print("No books found! Add a book first.")
+    if not book_exists(book_id):
+        print("Book not found!")
+        return
 
-# Function to delete a book
+    title = input("Enter new Title: ")
+    author = input("Enter new Author: ")
+    copies = input("Enter new Copies: ")
+
+    if book_data_exists(title, author, copies, exclude_id=book_id):
+        print("Another book with same details already exists!")
+        return
+
+    updated_rows = []
+    with open(FILENAME, "r", newline="") as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if row[0] == book_id:
+                updated_rows.append([book_id, title, author, copies])
+            else:
+                updated_rows.append(row)
+
+    with open(FILENAME, "w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerows(updated_rows)
+        print("Book updated successfully!")
+
+# Delete a book
 def delete_book():
     book_id = input("Enter Book ID to delete: ")
-    updated_lines = []
+    updated_rows = []
     found = False
     try:
-        with open(FILENAME, "r") as file:
-            for line in file:
-                record = line.strip().split(",")
-                if record[0] == book_id:
-                    found = True
+        with open(FILENAME, "r", newline="") as file:
+            reader = csv.reader(file)
+            for row in reader:
+                if row[0] != book_id:
+                    updated_rows.append(row)
                 else:
-                    updated_lines.append(line)
+                    found = True
+
         if found:
-            with open(FILENAME, "w") as file:
-                file.writelines(updated_lines)
+            with open(FILENAME, "w", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerows(updated_rows)
             print("Book deleted successfully!")
         else:
             print("Book not found!")
     except FileNotFoundError:
-        print("No books found! Add a book first.")
+        print("No books found!")
 
-# Main Menu
+# Main menu
 def main():
     while True:
         print("\nLibrary Book Management System")
@@ -117,6 +145,7 @@ def main():
         print("4. Update Book")
         print("5. Delete Book")
         print("6. Exit")
+
         choice = input("Enter your choice: ")
 
         if choice == "1":
@@ -130,10 +159,10 @@ def main():
         elif choice == "5":
             delete_book()
         elif choice == "6":
-            print("Exiting the program. Goodbye!")
+            print("Goodbye!")
             break
         else:
-            print("Invalid choice! Please try again.")
+            print("Invalid choice!")
 
 # Run the program
 if __name__ == "__main__":
